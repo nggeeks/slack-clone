@@ -1,41 +1,33 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { User } from './user.model';
-import { v1 as uuid } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto';
+import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
   users: User[] = [];
   logger = new Logger('UserService');
-  constructor() {
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {
     this.logger.log('UserService is up');
   }
 
-  getAllUsers(): User[] {
-    return this.users;
+  async getAllUsers(): Promise<User[]> {
+    return await this.usersRepository.find();
   }
 
-  createUser(payload: CreateUserDto): User {
-    const { firstName, lastName, username, email, password } = payload;
-    const user = {
-      id: uuid(),
-      firstName,
-      username,
-      lastName,
-      password,
-      email,
-    };
-    this.users.push(user);
-    return user;
+  createUser(payload: CreateUserDto): Promise<User> {
+    return this.usersRepository.save(payload);
   }
 
-  getUserById(userId: string): User {
-    const user = this.users.find(u => u.id === userId);
-
-    return user;
+  async getUserById(userId: string): Promise<User> {
+    return await this.usersRepository.findOne(userId);
   }
 
   deleteUserById(userId: string): void {
-    this.users = this.users.filter(u => u.id !== userId);
+    this.usersRepository.delete(userId);
   }
 }
